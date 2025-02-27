@@ -40,16 +40,16 @@
 
         #basket {
             position: absolute;
-            bottom: 20px;
+            bottom: 70px;
             width: 100px;
-            height: 60px;
+            height: 20px;
             background: rgba(255, 192, 203, 0.6);
             border-radius: 0 0 50% 50%;
             border: 3px solid #ff69b4;
             transition: transform 0.1s;
             text-align: center;
             line-height: 80px;
-            font-size: 24px;
+            font-size: 34px;
         }
 
         #basket:active {
@@ -188,7 +188,7 @@
         let score = 0;
         let timeLeft = 30;
         let gameActive = true;
-        const heartsToWin = 10;
+        const heartsToWin = 1;
         const hearts = ['❤️', '💖', '💝', '💕', '💗'];
         const messages = [
             "Yay! Keep going, Pookie! 💖",
@@ -198,11 +198,157 @@
             "You're my favorite! 💝"
         ];
 
+        // Mouse/touch movement
         function moveBasket(e) {
-            const x = e.type.includes('touch') ?
+            const x = e.type.includes('touch') ? 
                 e.touches[0].clientX : e.clientX;
-            basket.style.left = `${Math.max(0, Math.min(window.innerWidth - basket.offsetWidth, x - basket.offsetWidth / 2))}px`;
+            basket.style.left = `${Math.max(0, Math.min(window.innerWidth - basket.offsetWidth, x - basket.offsetWidth/2))}px`;
         }
 
         gameContainer.addEventListener('mousemove', moveBasket);
         gameContainer.addEventListener('touchmove', moveBasket);
+
+        // Create floating background emojis
+        function createFloatingEmoji() {
+            const emoji = document.createElement('div');
+            emoji.className = 'floating-emoji';
+            emoji.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+            emoji.style.left = Math.random() * window.innerWidth + 'px';
+            emoji.style.top = Math.random() * window.innerHeight + 'px';
+            emoji.style.animationDelay = Math.random() * 2 + 's';
+            gameContainer.appendChild(emoji);
+            setTimeout(() => emoji.remove(), 3000);
+        }
+
+        setInterval(createFloatingEmoji, 2000);
+
+        // Create falling hearts
+        function createHeart() {
+            if (!gameActive) return;
+            
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.style.left = Math.random() * (window.innerWidth - 30) + 'px';
+            heart.style.animationDuration = Math.random() * 2 + 3 + 's';
+            
+            gameContainer.appendChild(heart);
+
+            const checkCollision = setInterval(() => {
+                const heartRect = heart.getBoundingClientRect();
+                const basketRect = basket.getBoundingClientRect();
+
+                if (heartRect.bottom >= basketRect.top &&
+                    heartRect.top <= basketRect.bottom &&
+                    heartRect.right >= basketRect.left &&
+                    heartRect.left <= basketRect.right) {
+                    
+                    score++;
+                    scoreElement.textContent = score;
+                    pookieFill.style.width = (score / heartsToWin * 100) + '%';
+                    
+                    // Show random encouraging message
+                    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                    const msgElement = document.createElement('div');
+                    msgElement.textContent = randomMessage;
+                    msgElement.style.position = 'absolute';
+                    msgElement.style.left = heartRect.left + 'px';
+                    msgElement.style.top = heartRect.top + 'px';
+                    msgElement.style.animation = 'float 1s ease-out forwards';
+                    gameContainer.appendChild(msgElement);
+                    setTimeout(() => msgElement.remove(), 1000);
+
+                    heart.remove();
+                    clearInterval(checkCollision);
+
+                    if (score >= heartsToWin) {
+                        gameWon(0);
+                    }
+                }
+
+                if (heartRect.top > window.innerHeight) {
+                    heart.remove();
+                    clearInterval(checkCollision);
+                }
+            }, 50);
+        }
+
+        // Timer
+        const timer = setInterval(() => {
+            if (!gameActive) return;
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                gameActive = false;
+                clearInterval(timer);
+                if (score < heartsToWin) {
+                    message.textContent = "Aww, try again Pookie! 💕";
+                    message.style.opacity = 1;
+                    setTimeout(() => location.reload(), 2000);
+                }
+            }
+        }, 1000);
+
+        // Create hearts regularly
+        setInterval(createHeart, 800);
+
+        function gameWon() {
+            gameActive = false;
+            message.innerHTML = "You did it, Pookie!<br>Here's a virtual hug🫂  from me! 💖🐻";
+            message.style.opacity = 1;
+            message.style.animation = 'victory is ease infinite';
+            
+            // Show teddy
+            teddy.style.bottom = '40%';
+            
+            // Create heart explosion
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                    heart.style.position = 'fixed';
+                    heart.style.left = '50%';
+                    heart.style.top = '50%';
+                    heart.style.animation = `
+                        float ${Math.random() * 2 + 1}s ease-out forwards,
+                        fall ${Math.random() * 2 + 2}s ${Math.random()}s linear forwards
+                    `;
+                    gameContainer.appendChild(heart);
+                    setTimeout(() => heart.remove(), 3000);
+                }, i * 50);
+            }
+
+            // Show next button
+            setTimeout(() => {
+                nextButton.style.opacity = 1;
+            }, 2000);
+        }
+
+        // Next button click handler
+        nextButton.addEventListener('click', () => {
+            // Fade out effect
+            document.body.style.transition = 'opacity 1s ease-out';
+            document.body.style.opacity = '0';
+            
+            // Sweet goodbye message
+            const goodbye = document.createElement('div');
+            goodbye.style.position = 'fixed';
+            goodbye.style.top = '50%';
+            goodbye.style.left = '50%';
+            goodbye.style.transform = 'translate(-50%, -50%)';
+            goodbye.style.fontSize = '2rem';
+            goodbye.style.color = '#ff1493';
+            goodbye.style.textAlign = 'center';
+            goodbye.innerHTML = 'Get ready for something special, Pookie! 💖';
+            document.body.appendChild(goodbye);
+            
+            // Navigate to the next page after animation
+            setTimeout(() => {
+                window.location.href = 'final.html'; // Replace with your next page
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
